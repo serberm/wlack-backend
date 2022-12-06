@@ -1,6 +1,6 @@
 # Backend
-Node Version: 12.2.0
-
+Node Version: 14.16.2
+========= Currently migrating from prisma2 to prisma v4 ===========
 ## 1. install packages
 ### 1) install global packages
 install prisma2 (tested: 2.0.0-preview024)
@@ -29,12 +29,7 @@ npx prisma-multi-tenant init
 set the management database url to:
 
 development:
-> postgresql://admin@localhost:5432/wlack?schema=management
-
-staging
-
-production
-
+> postgresql://admin@localhost:5432/ciscord?schema=management
 
 ( ----- ***NOTE*** -----:
 1. Please check prisma-multi-tenant is installed correctly.
@@ -95,9 +90,9 @@ You will get success response like this via postman:
 - Error: missing-env
 If you get this error when you create the tenant, update .env.development
 ```
-DATABASE_URL="postgresql://admin@localhost:5432/wlack"
+DATABASE_URL="postgresql://admin@localhost:5432/ciscord"
 MANAGEMENT_PROVIDER=postgresql
-MANAGEMENT_URL=postgresql://admin@localhost:5432/wlack?schema=management
+MANAGEMENT_URL=postgresql://admin@localhost:5432/ciscord?schema=management
 ```
 
 ### 2) create tenant using website
