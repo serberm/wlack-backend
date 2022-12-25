@@ -1,22 +1,23 @@
-import { mutationField, stringArg, arg } from 'nexus'
+import { mutationField, stringArg, list } from 'nexus'
 import { getUserId, getTenant } from '../../utils'
-import { processUpload, deleteFromAws } from '../../utils/fileApi'
-import { removeFile, getOpenGraphData, createRemoteAttachments } from '../../utils/helpers'
+import { removeFile, createRemoteAttachments } from '../../utils/helpers'
 
 export const sendMessage = mutationField('sendMessage', {
   type: 'Message',
   args: {
     body: stringArg(),
-    attachments: stringArg({ list: true, nullable: true }),
+    attachments: list(stringArg()),
     channelUrl: stringArg(),
-    urlList: stringArg({ list: true, nullable: true }),
-    mentions: stringArg({ list: true, nullable: true }),
+    urlList: list(stringArg()),
+    mentions: list(stringArg()),
     communityUrl: stringArg()
   },
-  resolve: async (parent, { body, channelUrl, attachments, urlList, mentions, communityUrl }, ctx) => {
+  resolve: async (_, { body, channelUrl, attachments, urlList, mentions, communityUrl }, ctx) => {
     try {
       const userId = await getUserId(ctx)
-
+      if (!userId) {
+        throw new Error('nonexistent user')
+      }
       const data = {
         body,
         author: { connect: { id: userId } },
@@ -43,73 +44,72 @@ export const sendMessage = mutationField('sendMessage', {
         }
       })
       await ctx.pubsub.publish('NEW_MESSAGE', {
-        newMessage: message,
-        tenant: getTenant(ctx)
+        message
       })
-
       await ctx.pubsub.publish('CHANNEL_NEW_MESSAGE', {
         channelNewMessage: {
-          ...message.channel,
-        },
-        tenant: getTenant(ctx)
+          ...message.channel
+        }
       })
 
       //upsert his channelinfo
-      const user = await ctx.prisma.user.findOne({
+      const user = await ctx.prisma.user.findFirst({
         where: { id: userId },
         include: { channelsInfo: { include: { channel: true } } }
-      });
-      await ctx.prisma.channelInfo.upsert({
-        where: {
-          uniqueUserChannelPair: `${user.username}:${channelUrl}`
-        },
-        create: {
-          channel: { connect: { url: channelUrl } },
-          user: { connect: { id: userId } },
-          uniqueUserChannelPair: `${user.username}:${channelUrl}`,
-        },
-        update: {
-          lastUpdateAt: new Date(message.createdAt)
-        },
-      });
-
-
-      mentions.map(async (mention: any) => {
-        const notification = await ctx.prisma.notification.create({
-          data: {
-            type: 'mention',
-            sender: { connect: { id: userId } },
-            receiver: { connect: { username: mention } },
-            message: { connect: { id: message.id } },
-            channel: { connect: { url: channelUrl } },
-            community: { connect: { url: communityUrl } }
+      })
+      if (user) {
+        await ctx.prisma.channelInfo.upsert({
+          where: {
+            uniqueUserChannelPair: `${user.username}:${channelUrl}`
           },
-          include: {
-            sender: true,
-            receiver: true,
-            message: true,
-            channel: true
+          create: {
+            channel: { connect: { url: channelUrl! } },
+            user: { connect: { id: userId } },
+            uniqueUserChannelPair: `${user.username}:${channelUrl}`
+          },
+          update: {
+            lastUpdateAt: new Date(message.createdAt)
           }
         })
-        ctx.pubsub.publish('NEW_NOTIFICATION', {
-          newNotification: notification,
-          tenant: getTenant(ctx)
+      }
+      if (mentions) {
+        mentions.map(async (mention: any) => {
+          const notification = await ctx.prisma.notification.create({
+            data: {
+              type: 'mention',
+              sender: { connect: { id: userId } },
+              receiver: { connect: { username: mention } },
+              message: { connect: { id: message.id } },
+              channel: { connect: { url: channelUrl } },
+              community: { connect: { url: communityUrl } }
+            },
+            include: {
+              sender: true,
+              receiver: true,
+              message: true,
+              channel: true
+            }
+          })
+          ctx.pubsub.publish('NEW_NOTIFICATION', {
+            newNotification: notification,
+            tenant: getTenant(ctx)
+          })
         })
-      })
+      }
 
       if (communityUrl === 'direct') {
         // update channel createdAt (we will use createAt like the updatedAt lastmessage for private chat sort function)
         ctx.prisma.channel.update({
-          where: { url: channelUrl },
+          where: { url: channelUrl! },
           data: {
             createdAt: new Date()
           }
         })
 
         // ----- get other user and create the notification for private chat
-        const channelUsernames = channelUrl.replace('direct/', '').split('-')
-        
-        const user1 = await ctx.prisma.user.findOne({
+        const channelUsernames = channelUrl!.replace('direct/', '').split('-')
+
+        const user1 = await ctx.prisma.user.findFirst({
           where: {
             username: channelUsernames[0]
           },
@@ -118,7 +118,7 @@ export const sendMessage = mutationField('sendMessage', {
           }
         })
 
-        const user2 = await ctx.prisma.user.findOne({
+        const user2 = await ctx.prisma.user.findFirst({
           where: {
             username: channelUsernames[1]
           },
@@ -137,7 +137,7 @@ export const sendMessage = mutationField('sendMessage', {
                 sender: { connect: { id: userId } },
                 receiver: { connect: { username: otherUser.username } },
                 message: { connect: { id: message.id } },
-                channel: { connect: { url: channelUrl } },
+                channel: { connect: { url: channelUrl! } },
                 community: { connect: { url: communityUrl } }
               },
               include: {
@@ -147,7 +147,7 @@ export const sendMessage = mutationField('sendMessage', {
                 channel: true
               }
             })
-            ctx.pubsub.publish('NEW_NOTIFICATION', {
+            ctx.pubsub.publish('newNotification', {
               newNotification: notification,
               tenant: getTenant(ctx)
             })
@@ -169,12 +169,6 @@ export const editMessage = mutationField('editMessage', {
     messageId: stringArg()
   },
   resolve: async (parent, { body, messageId }, ctx) => {
-    const userId = getUserId(ctx)
-
-    if (!userId) {
-      throw new Error('nonexistent user')
-    }
-
     const requestingUserIsAuthor = await ctx.prisma.message.findMany({
       where: {
         id: messageId
@@ -215,12 +209,6 @@ export const deleteMessage = mutationField('deleteMessage', {
     messageId: stringArg()
   },
   resolve: async (parent, { messageId }, ctx) => {
-    const userId = getUserId(ctx)
-
-    if (!userId) {
-      throw new Error('nonexistent user')
-    }
-
     const currentMessage = await ctx.prisma.message.findMany({
       where: {
         id: messageId
@@ -246,7 +234,7 @@ export const deleteMessage = mutationField('deleteMessage', {
 
     const repliesAttachments = currentMessage[0].children
       .map(({ attachments }) => attachments.map(({ Key }) => Key))
-      .filter(item => item.length)
+      .filter((item) => item.length)
 
     const messageFiles = currentMessage[0].attachments.map(({ Key }) => Key)
 
@@ -284,16 +272,13 @@ export const deleteMessage = mutationField('deleteMessage', {
 })
 
 export const searchMessages = mutationField('searchMessages', {
-  type: 'Message',
-  list: true,
+  type: list('Message'),
   args: {
     channelUrl: stringArg(),
     searchQuery: stringArg()
   },
   resolve: async (_, { channelUrl, searchQuery }, ctx) => {
     if (!searchQuery || !searchQuery.length) throw new Error('search error')
-
-    const userId = await getUserId(ctx)
 
     const messagesList = await ctx.prisma.message.findMany({
       where: { channel: { url: channelUrl }, body: { contains: searchQuery } }
