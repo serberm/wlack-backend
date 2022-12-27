@@ -1,12 +1,6 @@
 import { mutationField, idArg, stringArg, objectType } from 'nexus'
 import { getUserId, getTenant } from '../../utils'
-
-const CountType = objectType({
-  name: 'Count',
-  definition(t) {
-    t.field('count', { type: 'Int' })
-  }
-})
+import { Notification } from '../index'
 
 export const sendNotification = mutationField('sendNotification', {
   type: 'Notification',
@@ -19,7 +13,9 @@ export const sendNotification = mutationField('sendNotification', {
   },
   resolve: async (parent, { messageId, receiverName, channelUrl, communityUrl, type }, ctx) => {
     const userId = await getUserId(ctx)
-
+    if (!userId) {
+      throw new Error('nonexistent user')
+    }
     const notification = await ctx.prisma.notification.create({
       data: {
         type,
@@ -46,13 +42,15 @@ export const sendNotification = mutationField('sendNotification', {
 })
 
 export const markNotificationAsRead = mutationField('markNotificationAsRead', {
-  type: CountType,
+  type: 'CountType',
   args: {
     id: stringArg()
   },
   resolve: async (parent, { id }, ctx) => {
     const userId = await getUserId(ctx)
-
+    if (!userId) {
+      throw new Error('nonexistent user')
+    }
     return ctx.prisma.notification.updateMany({
       where: {
         id,
@@ -64,13 +62,15 @@ export const markNotificationAsRead = mutationField('markNotificationAsRead', {
 })
 
 export const markNotificationsAsRead = mutationField('markNotificationsAsRead', {
-  type: CountType,
+  type: 'CountType',
   args: {
     type: stringArg()
   },
   resolve: async (parent, { type }, ctx) => {
     const userId = await getUserId(ctx)
-
+    if (!userId) {
+      throw new Error('nonexistent user')
+    }
     return ctx.prisma.notification.updateMany({
       where: {
         AND: [{ isRead: false }, { receiver: { id: userId } }, { type: type }]
@@ -85,7 +85,9 @@ export const markChannelNotificationsAsRead = mutationField('markChannelNotifica
   args: { channelUrl: stringArg() },
   resolve: async (parent, { channelUrl }, ctx) => {
     const userId = await getUserId(ctx)
-
+    if (!userId) {
+      throw new Error('nonexistent user')
+    }
     return ctx.prisma.notification.updateMany({
       where: {
         AND: [{ isRead: false }, { receiver: { id: userId } }, { channel: { url: channelUrl } }]
@@ -100,7 +102,9 @@ export const markCommunityNotificationsAsRead = mutationField('markCommunityNoti
   args: { communityUrl: stringArg() },
   resolve: async (parent, { communityUrl }, ctx) => {
     const userId = await getUserId(ctx)
-
+    if (!userId) {
+      throw new Error('nonexistent user')
+    }
     return ctx.prisma.notification.updateMany({
       where: {
         AND: [{ isRead: false }, { receiver: { id: userId } }, { community: { url: communityUrl } }]
