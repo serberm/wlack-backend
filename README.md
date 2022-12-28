@@ -90,9 +90,9 @@ You will get success response like this via postman:
 - Error: missing-env
 If you get this error when you create the tenant, update .env.development
 ```
-DATABASE_URL="postgresql://admin@localhost:5432/ciscord"
+DATABASE_URL="postgresql://admin@localhost:5432/wlack"
 MANAGEMENT_PROVIDER=postgresql
-MANAGEMENT_URL=postgresql://admin@localhost:5432/ciscord?schema=management
+MANAGEMENT_URL=postgresql://admin@localhost:5432/wlack?schema=management
 ```
 
 ### 2) create tenant using website
