@@ -1,33 +1,34 @@
-import { mutationField, stringArg, arg } from "nexus";
-import { getUserId, getTenant } from "../../utils";
-import { processUpload, deleteFromAws } from "../../utils/fileApi";
-import { removeFile,getOpenGraphData, createRemoteAttachments } from "../../utils/helpers";
+import { mutationField, stringArg, nullable } from 'nexus'
+import { getUserId, getTenant } from '../../utils'
+import { removeFile, createRemoteAttachments } from '../../utils/helpers'
 
-export const replyMessage = mutationField("replyMessage", {
-  type: "ReplyMessage",
+export const replyMessage = mutationField('replyMessage', {
+  type: 'ReplyMessage',
   args: {
     body: stringArg(),
     parentId: stringArg(),
-    attachments: stringArg({ list: true, nullable: true }),
-    urlList: stringArg({ list: true, nullable: true })
+    attachments: nullable(stringArg()),
+    urlList: nullable(stringArg())
   },
   resolve: async (parent, { body, parentId, attachments, urlList }, ctx) => {
-    const userId = (await getUserId(ctx)) || "ck3fot8rr0000qmkp16jlc1mq";
-
+    const userId = (await getUserId(ctx)) || 'ck3fot8rr0000qmkp16jlc1mq'
+    if (!userId) {
+      throw new Error('nonexistent user')
+    }
     const data = {
       body,
       author: { connect: { id: userId } },
       parent: { connect: { id: parentId } },
       attachments: {},
-      remoteAttachments: await createRemoteAttachments(urlList),
-    };
+      remoteAttachments: await createRemoteAttachments(urlList)
+    }
 
     if (attachments) {
       data.attachments = {
-        connect: attachments.map((Key: string ) => ({
+        connect: attachments.map((Key: string) => ({
           Key
         }))
-      };
+      }
     }
 
     const replyMessage = await ctx.prisma.replyMessage.create({
@@ -36,28 +37,28 @@ export const replyMessage = mutationField("replyMessage", {
         parent: { include: { channel: true, children: true, reactions: true } },
         author: true
       }
-    });
+    })
 
-    ctx.pubsub.publish("EDITED_MESSAGE", {
+    ctx.pubsub.publish('EDITED_MESSAGE', {
       editMessage: replyMessage.parent,
-      tenant: getTenant(ctx),
-    });
+      tenant: getTenant(ctx)
+    })
 
-    return replyMessage;
+    return replyMessage
   }
-});
+})
 
-export const editReplyMessage = mutationField("editReplyMessage", {
-  type: "ReplyMessage",
+export const editReplyMessage = mutationField('editReplyMessage', {
+  type: 'ReplyMessage',
   args: {
     body: stringArg(),
     messageId: stringArg()
   },
   resolve: async (parent, { body, messageId }, ctx) => {
-    const userId = getUserId(ctx) || "ck3fot8rr0000qmkp16jlc1mq";
+    const userId = getUserId(ctx) || 'ck3fot8rr0000qmkp16jlc1mq'
 
     if (!userId) {
-      throw new Error("nonexistent user");
+      throw new Error('nonexistent user')
     }
 
     const requestingUserIsAuthor = await ctx.prisma.replyMessage.findMany({
@@ -65,12 +66,10 @@ export const editReplyMessage = mutationField("editReplyMessage", {
         id: messageId,
         author: { id: userId }
       }
-    });
+    })
 
     if (!requestingUserIsAuthor[0]) {
-      throw new Error(
-        "Invalid permissions, you must be an author of this post to edit it."
-      );
+      throw new Error('Invalid permissions, you must be an author of this post to edit it.')
     }
 
     const message = await ctx.prisma.replyMessage.update({
@@ -84,27 +83,27 @@ export const editReplyMessage = mutationField("editReplyMessage", {
         parent: { include: { channel: true, children: true, reactions: true } },
         author: true
       }
-    });
+    })
 
-    ctx.pubsub.publish("EDITED_MESSAGE", {
+    ctx.pubsub.publish('EDITED_MESSAGE', {
       editMessage: message.parent,
-      tenant: getTenant(ctx),
-    });
+      tenant: getTenant(ctx)
+    })
 
-    return message;
+    return message
   }
-});
+})
 
-export const deleteReplyMessage = mutationField("deleteReplyMessage", {
-  type: "ReplyMessage",
+export const deleteReplyMessage = mutationField('deleteReplyMessage', {
+  type: 'ReplyMessage',
   args: {
     messageId: stringArg()
   },
   resolve: async (parent, { messageId }, ctx) => {
-    const userId = getUserId(ctx) || "ck3fot8rr0000qmkp16jlc1mq";
+    const userId = getUserId(ctx) || 'ck3fot8rr0000qmkp16jlc1mq'
 
     if (!userId) {
-      throw new Error("nonexistent user");
+      throw new Error('nonexistent user')
     }
 
     const requestingUserIsAuthor = await ctx.prisma.replyMessage.findMany({
@@ -113,17 +112,15 @@ export const deleteReplyMessage = mutationField("deleteReplyMessage", {
         author: { id: userId }
       },
       include: { attachments: true }
-    });
+    })
 
     if (!requestingUserIsAuthor[0]) {
-      throw new Error(
-        "Invalid permissions, you must be an author of this post to delete it."
-      );
+      throw new Error('Invalid permissions, you must be an author of this post to delete it.')
     }
 
-    const filesList = requestingUserIsAuthor[0].attachments.map(({ Key }) => Key);
+    const filesList = requestingUserIsAuthor[0].attachments.map(({ Key }) => Key)
 
-    await removeFile({filesList, ctx, messageId});
+    await removeFile({ filesList, ctx, messageId })
 
     const message = await ctx.prisma.replyMessage.delete({
       where: {
@@ -133,13 +130,13 @@ export const deleteReplyMessage = mutationField("deleteReplyMessage", {
         parent: { include: { channel: true, children: true, reactions: true } },
         author: true
       }
-    });
+    })
 
-    ctx.pubsub.publish("EDITED_MESSAGE", {
+    ctx.pubsub.publish('EDITED_MESSAGE', {
       editMessage: message.parent,
-      tenant: getTenant(ctx),
-    });
+      tenant: getTenant(ctx)
+    })
 
-    return message;
+    return message
   }
-});
+})
