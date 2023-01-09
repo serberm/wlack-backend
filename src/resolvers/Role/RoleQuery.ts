@@ -1,11 +1,8 @@
-import { queryField, stringArg } from 'nexus'
-import { getUserId } from '../../utils'
+import { queryField, list } from 'nexus'
 
 export const roles = queryField('roles', {
-  type: 'Role',
-  list: true,
+  type: list('Role'),
   resolve: (parent, args, ctx) => {
     return ctx.prisma.role.findMany()
-  },
+  }
 })
-

@@ -269,7 +269,7 @@ const canEditMessage = rule()(
 
 const anyUser = rule()(
   async (parent, args, context) => {
-    console.log('AnyUser' + context.request.get('wlack-tenant'))
+    console.log('AnyUser' + context.request.get('ciscord-tenant'))
     return true;
   }
 );

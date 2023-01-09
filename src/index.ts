@@ -1,14 +1,13 @@
 const dotenv = require('dotenv')
 dotenv.config({ path: `../.env.${process.env.NODE_ENV}` })
 import { createYoga } from 'graphql-yoga'
-import express from 'express'
+import * as express from 'express'
 import { join } from 'path'
 import * as types from './resolvers'
 import { Context, context } from './context'
-import RegisterCompany from './registerCompany'
 import { permissions } from './permissions'
 import { applyMiddleware } from 'graphql-middleware'
-import compression from 'compression' // compresses requests
+import * as compression from 'compression' // compresses requests
 import * as bodyParser from 'body-parser'
 import { makeSchema, nullabilityGuardPlugin } from 'nexus'
 
@@ -63,10 +62,6 @@ app.use(compression())
 app.use(bodyParser.json({ type: 'application/json' }))
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.text({ type: 'text/html' }))
-
-// SocialConfig.configure(app)
-
-app.use('/register', RegisterCompany)
 
 app.use('/graphql', yoga)
 
