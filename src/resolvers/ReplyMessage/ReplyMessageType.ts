@@ -1,6 +1,6 @@
 import { arg, intArg, objectType } from 'nexus'
 import { Message, RemoteAttachment, User, File } from '../index'
-import { DateTime, FileWhereUniqueInput } from '../Others'
+import { FileWhereUniqueInput } from '../Others'
 
 export const ReplyMessage = objectType({
   name: 'ReplyMessage',
