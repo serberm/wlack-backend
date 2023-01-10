@@ -10,9 +10,6 @@ export const uploadFile = mutationField('uploadFile', {
   args: { file: nullable(arg({ type: Upload })) },
   resolve: async (parent, { file }, ctx) => {
     const userId = getUserId(ctx)
-    if (!userId) {
-      throw new Error('nonexistent user')
-    }
 
     const { Key, filename, mimetype, encoding, filesize } = await processUpload(file)
 

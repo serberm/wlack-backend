@@ -1,10 +1,10 @@
 import { FileUpload } from 'graphql-upload'
 import { Stream } from 'stream'
-const uuid = require('uuid/v1')
 import { S3, AWSError } from 'aws-sdk'
+const uuid = require('uuid/v1')
 
-const bucketName = 'ciscord-dev'
-const awsRegion = 'us-east-2'
+const bucketName = process.env.AWS_BUCKET_NAME
+const awsRegion = process.env.AWS_REGION
 
 const s3 = new S3({
   accessKeyId: process.env.AWS_KEY,

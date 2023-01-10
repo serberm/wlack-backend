@@ -15,7 +15,7 @@ const cors = require('cors')
 const baseSchema = makeSchema({
   types,
   outputs: {
-    typegen: join(__dirname.replace(/\/dist$/, '/src'), './ciscord-typegen.ts'),
+    typegen: join(__dirname.replace(/\/dist$/, '/src'), './wlack-typegen.ts'),
     schema: join(__dirname, '/schema.graphql')
   },
   contextType: {

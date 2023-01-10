@@ -12,9 +12,6 @@ export const createCommunity = mutationField('createCommunity', {
   },
   resolve: (parent, { name, url, description, isPrivate, image }, ctx) => {
     const userId = getUserId(ctx)
-    if (!userId) {
-      throw new Error('nonexistent user')
-    }
     return ctx.prisma.community.create({
       data: {
         name,
