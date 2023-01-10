@@ -1,6 +1,5 @@
-import { mutationField, idArg, stringArg, objectType } from 'nexus'
+import { mutationField, idArg, stringArg } from 'nexus'
 import { getUserId, getTenant } from '../../utils'
-import { Notification } from '../index'
 
 export const sendNotification = mutationField('sendNotification', {
   type: 'Notification',
