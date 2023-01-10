@@ -1,8 +1,7 @@
-import { FileUpload, GraphQLUpload } from 'graphql-upload'
+import { FileUpload } from 'graphql-upload'
 import { mutationField, arg, stringArg, nullable, nonNull, list } from 'nexus'
 import { processUpload, deleteFromAws } from '../../utils/fileApi'
 import { getUserId } from '../../utils'
-import { File } from '../index'
 import { Upload } from '../Others'
 
 export const uploadFile = mutationField('uploadFile', {
