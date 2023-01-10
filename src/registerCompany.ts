@@ -1,6 +1,5 @@
 import * as express from 'express'
-const { run } = require('../scripts/helpers')
-import { compare, hash } from 'bcryptjs'
+import { hash } from 'bcryptjs'
 import { context } from './context'
 
 export const createTenant = async (req: any, res: any, next: any) => {
