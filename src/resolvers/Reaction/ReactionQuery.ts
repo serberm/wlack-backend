@@ -1,5 +1,4 @@
 import { queryField, stringArg, list } from 'nexus'
-import { getUserId } from '../../utils'
 
 export const reactions = queryField('reactions', {
   type: list('Reaction'),
