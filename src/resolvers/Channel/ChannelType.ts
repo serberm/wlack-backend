@@ -1,6 +1,6 @@
 import { arg, intArg, objectType } from 'nexus'
 import { ChannelInfo, Community, Message, User, Notification } from '../index'
-import { ChannelInfoWhereUniqueInput, DateTime, UserWhereUniqueInput } from '../Others'
+import { ChannelInfoWhereUniqueInput, UserWhereUniqueInput } from '../Others'
 
 export const Channel = objectType({
   name: 'Channel',
