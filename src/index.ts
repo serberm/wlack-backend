@@ -5,6 +5,7 @@ import * as express from 'express'
 import { join } from 'path'
 import * as types from './resolvers'
 import { Context, context } from './context'
+import RegisterCompany from './registerCompany'
 import { permissions } from './permissions'
 import { applyMiddleware } from 'graphql-middleware'
 import * as compression from 'compression' // compresses requests
@@ -64,6 +65,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.text({ type: 'text/html' }))
 
 app.use('/graphql', yoga)
+app.use('/register', RegisterCompany)
 
 app.listen(4000, () => {
   console.log('Running a GraphQL API server at http://localhost:4000/graphql')
