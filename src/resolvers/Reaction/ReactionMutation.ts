@@ -1,6 +1,5 @@
 import { mutationField, stringArg } from 'nexus'
 import { getUserId, getTenant } from '../../utils'
-import { Reaction } from '../index'
 
 type reactionPayload = {
   messageId?: string
